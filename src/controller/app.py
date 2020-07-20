@@ -20,6 +20,10 @@ class App(object):
     def start(self, update):
         self.update = update
         imgui.create_context()
+        io = imgui.get_io()
+        import os
+
+        io.fonts.add_font_from_file_ttf("./res/cont/nsimsun.ttf", 14)
         self.window = App._impl_glfw_init()
         impl = GlfwRenderer(self.window)
 

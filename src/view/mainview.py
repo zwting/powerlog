@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import imgui
 
-from src.model.mainconfig import MainConfig, ELogLevel
+from src.model.mainconfig import MainConfig, ELogLevel, EConfigKey
 
 
 class MainView(object):
@@ -15,6 +15,11 @@ class MainView(object):
 
         self.ID_CHILD_CONSOLE = "child_console"
 
+        self.init()
+
+    def init(self):
+        pass
+
     def update(self):
         imgui.set_next_window_size(self.width, self.height)
         imgui.set_next_window_position(0, 0)
@@ -24,6 +29,16 @@ class MainView(object):
         imgui.begin("main view", False,
                     imgui.WINDOW_NO_MOVE | imgui.WINDOW_NO_COLLAPSE | imgui.WINDOW_NO_RESIZE)
 
+        self.draw_logs()
+
+        self.draw_btn_bar()
+
+        self.draw_input_bar()
+        
+        imgui.end()
+        imgui.pop_style_var(2)
+
+    def draw_logs(self):
         imgui.push_style_var(imgui.STYLE_WINDOW_PADDING, (6, 6))
         cur_style = imgui.get_style()
         padding = cur_style.window_padding
@@ -40,14 +55,16 @@ class MainView(object):
         imgui.end_child()
         imgui.pop_style_var()
 
-        # 按纽栏
+    def draw_btn_bar(self):
+         # 按钮栏
+        padding = imgui.get_style().window_padding
         cur_cursor_pos = imgui.get_cursor_pos()
         imgui.set_cursor_pos((cur_cursor_pos[0] + padding[0], cur_cursor_pos[1]))
         if imgui.button("clear"):
-            print ("clear")
+            print ("清理")
         imgui.same_line()
 
-        # log level
+        # log等级
         for log_level in xrange(ELogLevel.LOG, 3 + 1):
             is_check = self.config.is_has_log_level(log_level)
             ret = imgui.checkbox(self.log_level[log_level - 1], is_check)
@@ -59,6 +76,17 @@ class MainView(object):
             else:
                 self.config.remove_log_level(log_level)
 
+        # 搜索框
+        imgui.same_line()
+        old_text = self.config.getString(EConfigKey.CONTENT_SEARCH_TEXT)
+        ret = imgui.input_text("", old_text, len(old_text))
+        if ret[0]:
+            self.config.setString(EConfigKey.CONTENT_SEARCH_TEXT, ret[1])
+            self.on_search_text_change(ret[1])
 
-        imgui.end()
-        imgui.pop_style_var(2)
+    def draw_input_bar(self):
+        pass
+
+    def on_search_text_change(self, new_text):
+        print("on_search_text_change>>", new_text)
+        pass
