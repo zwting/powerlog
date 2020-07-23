@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from src.common import utils
+
 
 class ELogLevel(object):
     LOG = 1
@@ -8,6 +10,9 @@ class ELogLevel(object):
 class EConfigKey(object):
     LOG_LEVEL_LIST = "LOG_LEVEL_LIST"           # log等级勾选状态
     CONTENT_SEARCH_TEXT = "CONTENT_SEARCH_TEXT" # 搜索框内容
+    CONTENT_CMD_TXT = "CONTENT_CMD_TXT"         # 命令框历史记录
+    CONTENT_CMD_IDX = "CONTENT_CMD_IDX"         # 命令框历史记录指针
+    CONTENT_CMD_MAX_COUNT = "CONTENT_CMD_MAX_COUNT" # 命令框历史记录最大值
 
 class MainConfig(object):
     _instance = None
@@ -21,6 +26,11 @@ class MainConfig(object):
     def __init__(self):
         self.config = {}
 
+    # 历史记录最大值
+    @property
+    def max_cmd_history_count(self):
+        return self.config.setdefault(EConfigKey.CONTENT_CMD_MAX_COUNT, 20)
+
     def add_log_level(self, log_level):
         log_level_list = self.config.setdefault(EConfigKey.LOG_LEVEL_LIST, [])
         if log_level in log_level_list:
@@ -32,6 +42,32 @@ class MainConfig(object):
 
     def is_has_log_level(self, log_level):
         return log_level in self.config.get(EConfigKey.LOG_LEVEL_LIST, [])
+
+    def push_cmd(self, cmd_str):
+        if not cmd_str or not isinstance(cmd_str, str):
+            return
+        lst = self.config.setdefault(EConfigKey.CONTENT_CMD_TXT, [])
+        lst.append(cmd_str)
+        if len(lst) > self.max_cmd_history_count:
+            lst.pop(0)
+        else:
+            self.change_current_cmd_idx(1)
+
+    # 获取当前指针所指的命令
+    def get_current_cmd(self):
+        lst = self.config.setdefault(EConfigKey.CONTENT_CMD_TXT, [])
+        if not lst:
+            return ""
+        idx = utils.clamp(0, self.max_cmd_history_count - 1, self.config.setdefault(EConfigKey.CONTENT_CMD_IDX, 0))
+        if 0 <= idx < len(lst):
+            return lst[idx]
+        idx = utils.clamp(0, self.max_cmd_history_count - 1, len(lst) - 1)
+        self.config.setdefault(EConfigKey.CONTENT_CMD_IDX, idx)
+        return ""
+
+    def change_current_cmd_idx(self, step):
+        idx = self.config.setdefault(EConfigKey.CONTENT_CMD_IDX, 0)
+        self.config[EConfigKey.CONTENT_CMD_IDX] = utils.clamp(0, self.max_cmd_history_count - 1, idx + step)
 
     def getString(self, key):
         return self.config.get(key, "")

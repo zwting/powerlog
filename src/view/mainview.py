@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import imgui
 
+from src.common import utils
 from src.model.mainconfig import MainConfig, ELogLevel, EConfigKey
 
 
@@ -47,7 +48,7 @@ class MainView(object):
         imgui.begin_child(self.ID_CHILD_CONSOLE, self.width - cur_style.window_padding[0] * 2, self.height - 120, True)
 
         for text in xrange(100):
-            ret = imgui.selectable("log-----------------------------%s" % text, (self.last_sel_log==text), height=30)
+            ret = imgui.selectable("log---我是--------------------------%s" % text, (self.last_sel_log==text), height=30)
             if ret[1]:
                 self.last_sel_log = text
         # imgui.text("hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh")
@@ -57,9 +58,7 @@ class MainView(object):
 
     def draw_btn_bar(self):
          # 按钮栏
-        padding = imgui.get_style().window_padding
-        cur_cursor_pos = imgui.get_cursor_pos()
-        imgui.set_cursor_pos((cur_cursor_pos[0] + padding[0], cur_cursor_pos[1]))
+        utils.set_cursor_offset(6, 0)
         if imgui.button("clear"):
             print ("清理")
         imgui.same_line()
@@ -79,14 +78,26 @@ class MainView(object):
         # 搜索框
         imgui.same_line()
         old_text = self.config.getString(EConfigKey.CONTENT_SEARCH_TEXT)
-        ret = imgui.input_text("", old_text, len(old_text))
+        imgui.push_item_width(240)
+        imgui.push_id(EConfigKey.CONTENT_SEARCH_TEXT)
+        ret = imgui.input_text("", old_text, 128)
+        imgui.pop_id()
         if ret[0]:
-            self.config.setString(EConfigKey.CONTENT_SEARCH_TEXT, ret[1])
             self.on_search_text_change(ret[1])
+        imgui.pop_item_width()
+        imgui.same_line()
+        utils.set_cursor_offset(-8, 0)
+        if imgui.button("清空"):
+            self.on_search_text_change("")
 
     def draw_input_bar(self):
-        pass
+        cur_cmd = self.config.get_current_cmd()
+        win_width = imgui.get_window_width()
+        imgui.push_id(EConfigKey.CONTENT_CMD_TXT)
+        ret = imgui.input_text_multiline("", cur_cmd, 2056, win_width - 20, 60)
+        
+        imgui.pop_id()
 
     def on_search_text_change(self, new_text):
+        self.config.setString(EConfigKey.CONTENT_SEARCH_TEXT, new_text)
         print("on_search_text_change>>", new_text)
-        pass

@@ -21,9 +21,8 @@ class App(object):
         self.update = update
         imgui.create_context()
         io = imgui.get_io()
-        import os
-
-        io.fonts.add_font_from_file_ttf("./res/cont/nsimsun.ttf", 14)
+        io.fonts.add_font_from_file_ttf("./res/font/FZHTJW.ttf", 14, io.fonts.get_glyph_ranges_chinese_full())
+        # io.fonts.add_font_from_file_ttf("./res/font/ProggyClean.ttf", 13, io.fonts.get_glyph_ranges_latin())
         self.window = App._impl_glfw_init()
         impl = GlfwRenderer(self.window)
 
