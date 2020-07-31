@@ -2,4 +2,4 @@
 from src.controller.app import App
 
 if __name__ == "__main__":
-    app = App(800, 500)
+    App.create_app(800, 600)

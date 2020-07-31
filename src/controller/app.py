@@ -6,23 +6,37 @@ import OpenGL.GL as gl
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 
+from src.controller import log_server
 from src.view.mainview import MainView
 
 
 class App(object):
+    _instance = None
+
+    @staticmethod
+    def instance():
+        return App._instance
+
+    @staticmethod
+    def create_app(width, height):
+        if App._instance:
+            return App._instance
+        App._instance = App(width, height)
+        return App._instance
+
     def __init__(self, width, height):
         self.width = width
         self.height = height
         self.window = None
         self.main_view = MainView(width, height)
+        log_server.main()
         self.start(self.main_view.update)
 
     def start(self, update):
         self.update = update
         imgui.create_context()
         io = imgui.get_io()
-        io.fonts.add_font_from_file_ttf("./res/font/FZHTJW.ttf", 14, io.fonts.get_glyph_ranges_chinese_full())
-        # io.fonts.add_font_from_file_ttf("./res/font/ProggyClean.ttf", 13, io.fonts.get_glyph_ranges_latin())
+        io.fonts.add_font_from_file_ttf("./res/font/FZZYJW.ttf", 12, io.fonts.get_glyph_ranges_chinese_full())
         self.window = App._impl_glfw_init()
         impl = GlfwRenderer(self.window)
 

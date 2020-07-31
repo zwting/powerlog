@@ -1,12 +1,6 @@
 # -*- coding: utf-8 -*-
 from src.common import utils
 
-
-class ELogLevel(object):
-    LOG = 1
-    WARNING = 2
-    ERROR = 3
-
 class EConfigKey(object):
     LOG_LEVEL_LIST = "LOG_LEVEL_LIST"           # log等级勾选状态
     CONTENT_SEARCH_TEXT = "CONTENT_SEARCH_TEXT" # 搜索框内容
