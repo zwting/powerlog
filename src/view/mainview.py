@@ -99,6 +99,7 @@ class MainView(object):
             elif record.level == logging.INFO:
                 old_color = utils.set_style_color(imgui.COLOR_TEXT, TextColor.EWhite)
             imgui.push_id(record.create_time_in_str)
+            imgui.push_text_wrap_pos(200)
             ret = imgui.selectable(record.msg_with_level, record == self.last_sel_log, height=30)
             if ret[1]:
                 self.last_sel_log = record
@@ -114,6 +115,7 @@ class MainView(object):
         utils.set_cursor_offset(6, 0)
         if imgui.button("clear"):
             print ("清理")
+            self.log_mgr.clear()
         imgui.same_line()
 
         # log等级

@@ -7,7 +7,7 @@ class LoggerWrap(object):
 
     @property
     def msg_with_level(self):
-        return "[%s] %s" % (self.log_record.levelname, self.log_record.msg)
+        return "[%s] %s" % (self.log_record.levelname, str(self.log_record.msg))
 
     @property
     def file_info(self):
@@ -40,7 +40,7 @@ class LogMgr(object):
         return LogMgr._instance
 
     def __init__(self):
-        self.max_log_count = 500
+        self.max_log_count = 5000
         self.log_lst = deque(maxlen=self.max_log_count)
 
     @property
@@ -51,3 +51,6 @@ class LogMgr(object):
 
     def push_log(self, log_record):
         self.log_lst.append(LoggerWrap(log_record))
+
+    def clear(self):
+        self.log_lst.clear()
