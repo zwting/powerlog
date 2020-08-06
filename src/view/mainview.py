@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
-import imgui
+import imgui, glfw
 
 from src.common import utils
 from src.model.mainconfig import MainConfig, EConfigKey
@@ -150,7 +150,11 @@ class MainView(object):
         win_width = imgui.get_window_width()
         imgui.push_id(EConfigKey.CONTENT_CMD_TXT)
         ret = imgui.input_text_multiline("", cur_cmd, 2056, win_width - 20, 60)
-        
+        # for key, down in enumerate(imgui.get_io().keys_down):
+        #     if down:
+        #         print key
+        if imgui.get_io().keys_down[glfw.KEY_ENTER]:
+            print ("hello world")
         imgui.pop_id()
 
     def on_search_text_change(self, new_text):

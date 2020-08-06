@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
 import logging, logging.handlers
 from collections import deque
+from time import sleep
+
+from src.controller.log_client import PowerLogSockHandler
 
 rootLogger = logging.getLogger('')
 rootLogger.setLevel(logging.DEBUG)
-socketHandler = logging.handlers.SocketHandler('localhost',
-                                               logging.handlers.DEFAULT_TCP_LOGGING_PORT)
+# socketHandler = logging.handlers.SocketHandler('localhost',
+#                                                logging.handlers.DEFAULT_TCP_LOGGING_PORT)
+def remote_handler(cmd):
+    print cmd
+socketHandler = PowerLogSockHandler('localhost', logging.handlers.DEFAULT_TCP_LOGGING_PORT, remote_handler)
 # don't bother with a formatter, since a socket handler sends the event as
 # an unformatted pickle
 rootLogger.addHandler(socketHandler)
@@ -24,3 +30,6 @@ logger1.info('How quickly daft jumping zebras vex.How quickly daft jumping zebra
 logger2.warning('Jail zesty vixen who grabbed pay from quack.')
 logger2.error('The five boxing wizards jump quickly.')
 
+while True:
+    socketHandler.try_receive()
+    sleep( 1.0 / 60)

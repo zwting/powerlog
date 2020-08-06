@@ -6,6 +6,8 @@ import socket
 import struct
 from logging import handlers
 
+from src.common import const
+from src.controller import packager
 from src.controller.log_mgr import LogMgr
 
 
@@ -27,6 +29,7 @@ class LogServer(object):
         self.handler = handler
         self.socket = None
         self.read_list = []
+        self.write_list = []
 
         logging.getLogger('').setLevel(logging.DEBUG)
         logging.basicConfig(
@@ -53,16 +56,52 @@ class LogServer(object):
                     self.read_list.append(new_conn)
                     self.read(new_conn)
                 else:
+                    if sock not in self.write_list:
+                        self.write_list.append(sock)
                     self.read(sock)
         # except socket.error as err:
         except Exception as err:
             print "Exception at", err
+
+    def send(self, str_cmd):
+        if not self.socket:
+            return
+        try:
+            rl, wl, el = select.select([], self.write_list, [], 0)
+            if not wl:
+                return
+            data = packager.pack(const.EPkgType.Cmd, str_cmd)
+            sender = wl[0]
+            if hasattr(sender, "sendall"):
+                sender.sendall(data)
+            else:
+                sent_sofar = 0
+                left = len(data)
+                while left > 0:
+                    sent = sender.send(data[sent_sofar:])
+                    sent_sofar += sent
+                    left -= sent
+        except socket.error:
+            sender.close()
+            self.write_list.remove(sender)
+
+
+    def dispatch(self, cmd, data):
+        if cmd == const.EPkgType.HeartBeat:
+            print ("Heat Beat:", data)
+        elif cmd == const.EPkgType.Log:
+            obj = pickle.loads(data)
+            record = logging.makeLogRecord(obj)
+            self.handler.handle(record)
+        elif cmd == const.EPkgType.Cmd:
+            print ("Cmd: ", data)
 
     def read(self, sock):
         try:
             chunk = sock.recv(4)
             if chunk <= 0:
                 self.read_list.remove(sock)
+                self.write_list.remove(sock)
                 sock.close()
                 return
             if len(chunk) < 4:
@@ -71,11 +110,12 @@ class LogServer(object):
             chunk = sock.recv(pkg_len)
             while len(chunk) < pkg_len:
                 chunk += sock.recv(pkg_len - len(chunk))
-            obj = pickle.loads(chunk)
-            record = logging.makeLogRecord(obj)
-            self.handler.handle(record)
+            cmd = struct.unpack(">I", chunk[0:4])[0]
+            self.dispatch(cmd, chunk[4:])
+
         except socket.error, e:
             if sock != self.socket:
                 sock.close()
                 self.read_list.remove(sock)
+                self.write_list.remove(sock)
             print e
