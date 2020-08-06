@@ -1,96 +1,60 @@
 # -*- coding: utf-8 -*-
-import pickle
 import logging
-import SocketServer
+import pickle
+import select
+import socket
 import struct
-import thread
 from logging import handlers
 
 from src.controller.log_mgr import LogMgr
 
+
 class PowerLogHandler(logging.Handler):
-    def __init__(self, app):
-        self.app = app
-        logging.Handler.__init__(self)
-        logging.LogRecord
+    def __init__(self):
+        # self.app = app
+        pass
 
-class LogRecordStreamHandler(SocketServer.StreamRequestHandler):
-    """Handler for a streaming logging request.
-
-    This basically logs the record using whatever logging policy is
-    configured locally.
-    """
-
-    def handle(self):
-        """
-        Handle multiple requests - each expected to be a 4-byte length,
-        followed by the LogRecord in pickle format. Logs the record
-        according to whatever policy is configured locally.
-        """
-        while True:
-            chunk = self.connection.recv(4)
-            if len(chunk) < 4:
-                break
-            slen = struct.unpack('>L', chunk)[0]
-            chunk = self.connection.recv(slen)
-            while len(chunk) < slen:
-                chunk = chunk + self.connection.recv(slen - len(chunk))
-            obj = self.unPickle(chunk)
-            record = logging.makeLogRecord(obj)
-            self.handleLogRecord(record)
-
-    def unPickle(self, data):
-        return pickle.loads(data)
-
-    def handleLogRecord(self, record):
-        # if a name is specified, we use the named logger rather than the one
-        # implied by the record.
-        if self.server.logname is not None:
-            name = self.server.logname
-        else:
-            name = record.name
-        logger = logging.getLogger(name)
-        # N.B. EVERY record gets logged. This is because Logger.handle
-        # is normally called AFTER logger-level filtering. If you want
-        # to do filtering, do it at the client end to save wasting
-        # cycles and network bandwidth!
-        logger.handle(record)
+    def handle(self, record):
         LogMgr.instance().push_log(record)
 
 
-class LogRecordSocketReceiver(SocketServer.ThreadingTCPServer):
-    """
-    Simple TCP socket-based logging receiver suitable for testing.
-    """
+class LogServer(object):
+    def __init__(self, handler, host="localhost", port=logging.handlers.DEFAULT_TCP_LOGGING_PORT):
+        self.host = host
+        self.port = port
+        self.handler = handler
+        self.socket = None
 
-    allow_reuse_address = 1
+        logging.getLogger('').setLevel(logging.DEBUG)
+        logging.basicConfig(
+            format='%(relativeCreated)5d %(name)-15s %(levelname)-8s %(message)s')
 
-    def __init__(self, host='localhost',
-                 port=logging.handlers.DEFAULT_TCP_LOGGING_PORT,
-                 handler=LogRecordStreamHandler):
-        SocketServer.ThreadingTCPServer.__init__(self, (host, port), handler)
-        self.abort = 0
-        self.timeout = 1
-        self.logname = None
+        self.init_socket()
 
-    def serve_until_stopped(self):
-        import select
-        abort = 0
-        while not abort:
-            rd, wr, ex = select.select([self.socket.fileno()],
-                                       [], [],
-                                       self.timeout)
-            if rd:
-                self.handle_request()
-            abort = self.abort
+    def init_socket(self):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        self.socket.bind((self.host, self.port))
+        self.socket.listen(5)
 
-def main():
-    logging.basicConfig(
-        format='%(relativeCreated)5d %(name)-15s %(levelname)-8s %(message)s')
-    tcpserver = LogRecordSocketReceiver()
-    print('About to start TCP server...')
-    thread.start_new(tcpserver.serve_until_stopped, ())
-    # tcpserver.serve_until_stopped()
-
-# if __name__ == '__main__':
-#     main()
+    def receive(self):
+        try:
+            rl, wl, el = select.select([self.socket], [], [], 0)
+            if not rl:
+                return
+            conn, addr = rl[0].accept()
+            chunk = conn.recv(4)
+            if len(chunk) < 4:
+                conn.close()
+                return
+            pkg_len = struct .unpack(">L", chunk)[0]
+            chunk = conn.recv(pkg_len)
+            while len(chunk) < pkg_len:
+                chunk += conn.recv(pkg_len - len(chunk))
+            obj = pickle.loads(chunk)
+            record = logging.makeLogRecord(obj)
+            self.handler.handle(record)
+            conn.close()
+        except socket.error as err:
+            conn and conn.close()
+            print err

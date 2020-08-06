@@ -6,7 +6,8 @@ import OpenGL.GL as gl
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 
-from src.controller import log_server
+from src.controller import log_server_old
+from src.controller.log_server import LogServer, PowerLogHandler
 from src.view.mainview import MainView
 
 
@@ -29,11 +30,17 @@ class App(object):
         self.height = height
         self.window = None
         self.main_view = MainView(width, height)
-        log_server.main()
-        self.start(self.main_view.update)
+        self.log_server = LogServer(PowerLogHandler())
+        # log_server_old.main()
+        self.start()
 
-    def start(self, update):
-        self.update = update
+    def update(self):
+        if not self.main_view:
+            return
+        self.log_server.receive()
+        self.main_view.update()
+
+    def start(self):
         imgui.create_context()
         io = imgui.get_io()
         io.fonts.add_font_from_file_ttf("./res/font/FZZYJW.ttf", 12, io.fonts.get_glyph_ranges_chinese_full())
@@ -43,26 +50,10 @@ class App(object):
         while not glfw.window_should_close(self.window):
             glfw.poll_events()
             impl.process_inputs()
-
             imgui.new_frame()
-
-            # if imgui.begin_main_menu_bar():
-            #     if imgui.begin_menu("File", True):
-            #
-            #         clicked_quit, selected_quit = imgui.menu_item(
-            #             "Quit", 'Cmd+Q', False, True
-            #         )
-            #
-            #         if clicked_quit:
-            #             exit(1)
-            #
-            #         imgui.end_menu()
-            #     imgui.end_main_menu_bar()
-
             imgui.show_test_window()
 
-            if self.update and callable(self.update):
-                self.update()
+            self.update()
 
             gl.glClearColor(1., 1., 1., 1)
             gl.glClear(gl.GL_COLOR_BUFFER_BIT)
