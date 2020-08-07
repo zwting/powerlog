@@ -29,7 +29,7 @@ class App(object):
         self.width = width
         self.height = height
         self.window = None
-        self.main_view = MainView(width, height)
+        self.main_view = MainView(self, width, height)
         self.log_server = LogServer(PowerLogHandler())
         # log_server_old.main()
         self.start()

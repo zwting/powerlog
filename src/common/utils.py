@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import imgui
 
+key_down_prev_map = {}
+key_down_map = {}
 
 def set_cursor_offset(offset_x, offset_y):
     pos = imgui.get_cursor_pos()
@@ -56,3 +58,22 @@ def filter_search_text(search_text, record):
         if len_text == 2:
             return True
         return search_text in record.msg
+
+def is_key_press(key):
+    return imgui.get_io().keys_down[key]
+
+def is_key_release(key):
+    return not imgui.get_io().keys_down[key]
+
+def is_key_down(key):
+    global key_down_map, key_down_prev_map
+    key_down_prev_map[key] = key_down_map.get(key, False)
+    key_down_map[key] = is_key_press(key)
+    return not key_down_prev_map[key] and key_down_map[key]
+
+def is_key_up(key):
+    global key_down_map, key_down_prev_map
+    key_down_prev_map[key] = key_down_map.get(key, False)
+    key_down_map[key] = is_key_press(key)
+    return key_down_prev_map[key] and not key_down_map[key]
+

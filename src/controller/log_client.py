@@ -38,8 +38,9 @@ class PowerLogSockHandler(handlers.SocketHandler):
             while len(chunk) < pkg_len:
                 chunk += rl[0].recv(pkg_len - len(chunk))
             cmd = struct.unpack(">I", chunk[0:4])
-            self.remote_cmd_handler(cmd, chunk[4:])
+            self.remote_cmd_handler(str(chunk[4:]))
         except Exception as e:
+            self.sock = self.makeSocket()
             print e
 
     def makeSocket(self):

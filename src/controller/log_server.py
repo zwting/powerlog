@@ -55,9 +55,9 @@ class LogServer(object):
                     new_conn, addr = sock.accept()
                     self.read_list.append(new_conn)
                     self.read(new_conn)
+                    if new_conn not in self.write_list:
+                        self.write_list.append(new_conn)
                 else:
-                    if sock not in self.write_list:
-                        self.write_list.append(sock)
                     self.read(sock)
         # except socket.error as err:
         except Exception as err:

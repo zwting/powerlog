@@ -10,7 +10,8 @@ from src.view.buildin_style import TextColor
 
 class MainView(object):
 
-    def __init__(self, width, height):
+    def __init__(self, app, width, height):
+        self.app = app
         self.width = width
         self.height = height
         self.last_sel_log = None
@@ -149,12 +150,12 @@ class MainView(object):
         cur_cmd = self.config.get_current_cmd()
         win_width = imgui.get_window_width()
         imgui.push_id(EConfigKey.CONTENT_CMD_TXT)
-        ret = imgui.input_text_multiline("", cur_cmd, 2056, win_width - 20, 60)
-        # for key, down in enumerate(imgui.get_io().keys_down):
-        #     if down:
-        #         print key
-        if imgui.get_io().keys_down[glfw.KEY_ENTER]:
-            print ("hello world")
+        ret = imgui.input_text_multiline("", cur_cmd, 2056, win_width - 20, 60,
+                                         imgui.INPUT_TEXT_ENTER_RETURNS_TRUE | imgui.INPUT_TEXT_CTRL_ENTER_FOR_NEW_LINE)
+        if ret[0]:
+            self.app.log_server.send(ret[1])
+            imgui.set_keyboard_focus_here(1)
+            # print "hello world", ret[1]
         imgui.pop_id()
 
     def on_search_text_change(self, new_text):
