@@ -149,9 +149,11 @@ class MainView(object):
     def draw_input_bar(self):
         cur_cmd = self.config.get_current_cmd()
         win_width = imgui.get_window_width()
+        imgui.push_item_width(win_width - 20)
         imgui.push_id(EConfigKey.CONTENT_CMD_TXT)
-        ret = imgui.input_text_multiline("", cur_cmd, 2056, win_width - 20, 60,
-                                         imgui.INPUT_TEXT_ENTER_RETURNS_TRUE | imgui.INPUT_TEXT_CTRL_ENTER_FOR_NEW_LINE)
+        ret = imgui.input_text("", cur_cmd, 2056, imgui.INPUT_TEXT_ENTER_RETURNS_TRUE |
+                               imgui.INPUT_TEXT_CALLBACK_COMPLETION | imgui.INPUT_TEXT_CALLBACK_HISTORY
+                               , None)
         if ret[0]:
             self.app.log_server.send(ret[1])
             imgui.set_keyboard_focus_here(1)

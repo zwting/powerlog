@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import cPickle
 import select
+import socket
 import struct
 import time
 from logging import handlers
@@ -19,9 +20,11 @@ class PowerLogSockHandler(handlers.SocketHandler):
         self.hb_duration = hb_duration
 
     def try_receive(self):
-        if not self.sock:
-            return
         try:
+            if not self.read_list:
+                self.sock = self.makeSocket()
+            if not self.read_list:
+                return
             rl, wl, el = select.select(self.read_list, self.read_list, [], 0)
             if time.time() - self.last_hb_time >= self.hb_duration and wl:
                 self.last_hb_time = time.time()
@@ -39,16 +42,26 @@ class PowerLogSockHandler(handlers.SocketHandler):
                 chunk += rl[0].recv(pkg_len - len(chunk))
             cmd = struct.unpack(">I", chunk[0:4])
             self.remote_cmd_handler(str(chunk[4:]))
-        except Exception as e:
-            self.sock = self.makeSocket()
-            print e
+        except socket.error as socket_err:
+            import errno
+            print "[1]socket.error: %s" % socket_err
+            self.read_list = []
+            self.sock = None
+        except select.error as select_err:
+            print "[2]select.error: %s" % select_err
 
     def makeSocket(self):
-        socket = super(PowerLogSockHandler, self).makeSocket(self.timeout)
-        self.last_hb_time = 0
-        self.read_list = []
-        self.read_list.append(socket)
-        return socket
+        import socket
+        try:
+            sock = super(PowerLogSockHandler, self).makeSocket(self.timeout)
+            self.last_hb_time = 0
+            self.read_list = []
+            self.read_list.append(sock)
+            return sock
+        except socket.error as socket_err:
+            print "[3]socket.error：%s" % socket_err
+            # print errno.errorcode[err[1]]
+
 
     def makePickle(self, record):
         return packager.pack(const.EPkgType.Log, record)

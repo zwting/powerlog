@@ -60,13 +60,17 @@ class LogServer(object):
                 else:
                     self.read(sock)
         # except socket.error as err:
-        except Exception as err:
-            print "Exception at", err
+        except socket.error as socket_err:
+            print "[1]socket.error: %s" % socket_err
 
     def send(self, str_cmd):
+        if not str_cmd or not str_cmd.strip():
+            return
         if not self.socket:
             return
         try:
+            if not self.write_list:
+                return
             rl, wl, el = select.select([], self.write_list, [], 0)
             if not wl:
                 return
@@ -81,9 +85,9 @@ class LogServer(object):
                     sent = sender.send(data[sent_sofar:])
                     sent_sofar += sent
                     left -= sent
-        except socket.error:
-            sender.close()
-            self.write_list.remove(sender)
+        except socket.error as socket_err:
+            print "[2]socket.error: %s" % socket_err
+            # self.write_list.remove(sender)
 
 
     def dispatch(self, cmd, data):
@@ -113,9 +117,9 @@ class LogServer(object):
             cmd = struct.unpack(">I", chunk[0:4])[0]
             self.dispatch(cmd, chunk[4:])
 
-        except socket.error, e:
+        except socket.error as socket_err:
+            print "[3]socket.error: %s" % socket_err
             if sock != self.socket:
                 sock.close()
                 self.read_list.remove(sock)
                 self.write_list.remove(sock)
-            print e
