@@ -41,23 +41,34 @@ class MainConfig(object):
         if not cmd_str or not isinstance(cmd_str, str):
             return
         lst = self.config.setdefault(EConfigKey.CONTENT_CMD_TXT, [])
+        self.config[EConfigKey.CONTENT_CMD_IDX] = -1
         lst.append(cmd_str)
         if len(lst) > self.max_cmd_history_count:
             lst.pop(0)
-        else:
-            self.change_current_cmd_idx(1)
 
     # 获取当前指针所指的命令
     def get_current_cmd(self):
-        lst = self.config.setdefault(EConfigKey.CONTENT_CMD_TXT, [])
+        lst = self.config.get(EConfigKey.CONTENT_CMD_TXT, None)
         if not lst:
             return ""
-        idx = utils.clamp(0, self.max_cmd_history_count - 1, self.config.setdefault(EConfigKey.CONTENT_CMD_IDX, 0))
-        if 0 <= idx < len(lst):
-            return lst[idx]
-        idx = utils.clamp(0, self.max_cmd_history_count - 1, len(lst) - 1)
-        self.config.setdefault(EConfigKey.CONTENT_CMD_IDX, idx)
+        cur_idx = self.config.get(EConfigKey.CONTENT_CMD_IDX, -1)
+        if cur_idx == -1:
+            return ""
+        if 0 <= cur_idx < len(lst):
+            return lst[cur_idx]
+        self.config[EConfigKey.CONTENT_CMD_IDX] = -1
         return ""
+
+    # 获取当前历史指令指针的位置
+    def get_current_cmd_pos(self):
+        return self.config.get(EConfigKey.CONTENT_CMD_IDX, -1)
+
+    # 设置命令指针到最后
+    def set_cmd_pos_to_last(self):
+        lst = self.config.setdefault(EConfigKey.CONTENT_CMD_TXT, [])
+        if not lst:
+            return
+        self.config[EConfigKey.CONTENT_CMD_IDX] = len(lst) - 1
 
     def change_current_cmd_idx(self, step):
         idx = self.config.setdefault(EConfigKey.CONTENT_CMD_IDX, 0)

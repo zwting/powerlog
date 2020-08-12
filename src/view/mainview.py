@@ -149,16 +149,40 @@ class MainView(object):
     def draw_input_bar(self):
         cur_cmd = self.config.get_current_cmd()
         win_width = imgui.get_window_width()
-        imgui.push_item_width(win_width - 20)
+        win_height = imgui.get_window_height()
         imgui.push_id(EConfigKey.CONTENT_CMD_TXT)
-        ret = imgui.input_text("", cur_cmd, 2056, imgui.INPUT_TEXT_ENTER_RETURNS_TRUE |
+        print cur_cmd
+        ret = imgui.input_text("", cur_cmd, 1024, imgui.INPUT_TEXT_CALLBACK_ALWAYS |
                                imgui.INPUT_TEXT_CALLBACK_COMPLETION | imgui.INPUT_TEXT_CALLBACK_HISTORY
-                               , None)
+                               ,self.input_bar_callback)
         if ret[0]:
-            self.app.log_server.send(ret[1])
-            imgui.set_keyboard_focus_here(1)
+            self.excute_cmd(ret[1])
+            imgui.set_item_default_focus()
+            imgui.set_keyboard_focus_here(-1)
             # print "hello world", ret[1]
         imgui.pop_id()
+
+    def excute_cmd(self, cmd):
+        if not cmd:
+            return
+        cmd = cmd.strip()
+        if not cmd:
+            return
+        self.config.push_cmd(cmd)
+        print ("excute_cmd", cmd)
+        self.app.log_server.send(cmd)
+
+    def input_bar_callback(self, evt_flag, evt_key, str_content, cur_pos):
+        print evt_flag, evt_key, str_content, cur_pos
+        if evt_flag == imgui.INPUT_TEXT_CALLBACK_HISTORY:
+            if evt_key == imgui.KEY_DOWN_ARROW:
+                self.config.change_current_cmd_idx(1)
+            elif evt_key == imgui.KEY_UP_ARROW:
+                pos = self.config.get_current_cmd_pos()
+                if pos == -1:
+                    self.config.set_cmd_pos_to_last()
+                elif pos > 0:
+                    self.config.change_current_cmd_idx(-1)
 
     def on_search_text_change(self, new_text):
         self.config.setString(EConfigKey.CONTENT_SEARCH_TEXT, new_text)
