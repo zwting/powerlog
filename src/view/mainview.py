@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import logging
 
-import imgui, glfw
+import glfw, imgui
 
 from src.common import utils
 from src.model.mainconfig import MainConfig, EConfigKey
