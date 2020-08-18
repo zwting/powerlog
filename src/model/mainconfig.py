@@ -7,6 +7,7 @@ class EConfigKey(object):
     CONTENT_CMD_TXT = "CONTENT_CMD_TXT"         # 命令框历史记录
     CONTENT_CMD_IDX = "CONTENT_CMD_IDX"         # 命令框历史记录指针
     CONTENT_CMD_MAX_COUNT = "CONTENT_CMD_MAX_COUNT" # 命令框历史记录最大值
+    CONTENT_SCROLL_TO_BOTTOM = "CONTENT_SCROLL_TO_BOTTOM"   #log是否固定到底部
 
 class MainConfig(object):
     _instance = None
@@ -72,12 +73,21 @@ class MainConfig(object):
 
     def change_current_cmd_idx(self, step):
         idx = self.config.setdefault(EConfigKey.CONTENT_CMD_IDX, 0)
-        self.config[EConfigKey.CONTENT_CMD_IDX] = utils.clamp(0, self.max_cmd_history_count - 1, idx + step)
+        self.config[EConfigKey.CONTENT_CMD_IDX] = \
+            utils.clamp(0, min(self.max_cmd_history_count - 1, len(self.config.get(EConfigKey.CONTENT_CMD_TXT)) - 1), idx + step)
 
-    def getString(self, key):
+    def get_string(self, key):
         return self.config.get(key, "")
 
-    def setString(self, key, value=None):
+    def set_string(self, key, value=None):
+        if not key:
+            return
+        self.config[key] = value
+
+    def get_bool(self, key, default_val=False):
+        return self.config.get(key, default_val)
+
+    def set_bool(self, key, value=False):
         if not key:
             return
         self.config[key] = value

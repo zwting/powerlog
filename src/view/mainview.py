@@ -86,7 +86,8 @@ class MainView(object):
         imgui.set_cursor_pos((cur_cursor_pos[0] + padding[0], cur_cursor_pos[1] + padding[1]))
         imgui.begin_child(self.ID_CHILD_CONSOLE, self.width - cur_style.window_padding[0] * 2, self.height - 150, True)
 
-        search_text = self.config.getString(EConfigKey.CONTENT_SEARCH_TEXT)
+        search_text = self.config.get_string(EConfigKey.CONTENT_SEARCH_TEXT)
+        win_width = imgui.get_window_width()
         for record in self.log_mgr.log_lst:
             if not self.config.is_has_log_level(record.level):
                 continue
@@ -100,13 +101,22 @@ class MainView(object):
             elif record.level == logging.INFO:
                 old_color = utils.set_style_color(imgui.COLOR_TEXT, TextColor.EWhite)
             imgui.push_id(record.create_time_in_str)
-            imgui.push_text_wrap_pos(200)
-            ret = imgui.selectable(record.msg_with_level, record == self.last_sel_log, height=30)
+            ret = imgui.selectable_wrap(record.msg_with_level, record == self.last_sel_log, 0, win_width*0.98, 30)
             if ret[1]:
                 self.last_sel_log = record
             if old_color:
                 utils.set_style_color(imgui.COLOR_TEXT, old_color)
             imgui.pop_id()
+
+        if imgui.is_mouse_dragging() or imgui.get_io().mouse_wheel:
+            if imgui.get_scroll_y() >= imgui.get_scroll_max_y():
+                self.config.set_bool(EConfigKey.CONTENT_SCROLL_TO_BOTTOM, True)
+            else:
+                self.config.set_bool(EConfigKey.CONTENT_SCROLL_TO_BOTTOM, False)
+
+        is_to_bottom = self.config.get_bool(EConfigKey.CONTENT_SCROLL_TO_BOTTOM, True)
+        if is_to_bottom:
+            imgui.set_scroll_y(imgui.get_scroll_max_y())
 
         imgui.end_child()
         imgui.pop_style_var()
@@ -133,7 +143,7 @@ class MainView(object):
 
         # 搜索框
         imgui.same_line()
-        old_text = self.config.getString(EConfigKey.CONTENT_SEARCH_TEXT)
+        old_text = self.config.get_string(EConfigKey.CONTENT_SEARCH_TEXT)
         imgui.push_item_width(240)
         imgui.push_id(EConfigKey.CONTENT_SEARCH_TEXT)
         ret = imgui.input_text("", old_text, 128)
@@ -146,13 +156,20 @@ class MainView(object):
         if imgui.button("清空"):
             self.on_search_text_change("")
 
+        # 是否固定到底部
+        imgui.same_line()
+        is_to_bottom = self.config.get_bool(EConfigKey.CONTENT_SCROLL_TO_BOTTOM, True)
+        ret = imgui.checkbox("bottom", is_to_bottom)
+        if ret[1] != is_to_bottom:
+            self.config.set_bool(EConfigKey.CONTENT_SCROLL_TO_BOTTOM, ret[1])
+
     def draw_input_bar(self):
+        utils.set_cursor_offset(6, 0)
         cur_cmd = self.config.get_current_cmd()
         win_width = imgui.get_window_width()
         win_height = imgui.get_window_height()
         imgui.push_id(EConfigKey.CONTENT_CMD_TXT)
-        print cur_cmd
-        ret = imgui.input_text("", cur_cmd, 1024, imgui.INPUT_TEXT_CALLBACK_ALWAYS |
+        ret = imgui.input_text("", cur_cmd, 1024, imgui.INPUT_TEXT_ENTER_RETURNS_TRUE|
                                imgui.INPUT_TEXT_CALLBACK_COMPLETION | imgui.INPUT_TEXT_CALLBACK_HISTORY
                                ,self.input_bar_callback)
         if ret[0]:
@@ -172,20 +189,29 @@ class MainView(object):
         print ("excute_cmd", cmd)
         self.app.log_server.send(cmd)
 
-    def input_bar_callback(self, evt_flag, evt_key, str_content, cur_pos):
-        print evt_flag, evt_key, str_content, cur_pos
-        if evt_flag == imgui.INPUT_TEXT_CALLBACK_HISTORY:
-            if evt_key == imgui.KEY_DOWN_ARROW:
+    def input_bar_callback(self, data):
+        print data
+        if data.event_flag == imgui.INPUT_TEXT_CALLBACK_HISTORY:
+            if data.event_key == imgui.KEY_DOWN_ARROW:
                 self.config.change_current_cmd_idx(1)
-            elif evt_key == imgui.KEY_UP_ARROW:
+            elif data.event_key == imgui.KEY_UP_ARROW:
                 pos = self.config.get_current_cmd_pos()
                 if pos == -1:
                     self.config.set_cmd_pos_to_last()
                 elif pos > 0:
                     self.config.change_current_cmd_idx(-1)
+            prev_cmd = data.buf
+            cmd = self.config.get_current_cmd()
+            if prev_cmd == cmd:
+                return
+            if data.buf_text_len > 0:
+                data.delete_chars(0, data.buf_text_len)
+            data.insert_chars(0, cmd)
+        elif data.event_flag == imgui.INPUT_TEXT_CALLBACK_COMPLETION:
+            print "complete"
 
     def on_search_text_change(self, new_text):
-        self.config.setString(EConfigKey.CONTENT_SEARCH_TEXT, new_text)
+        self.config.set_string(EConfigKey.CONTENT_SEARCH_TEXT, new_text)
         print("on_search_text_change>>", new_text)
 
     def refresh(self, new_record):

@@ -30,6 +30,9 @@ logger1.info('How quickly daft jumping zebras vex.How quickly daft jumping zebra
 logger2.warning('Jail zesty vixen who grabbed pay from quack.')
 logger2.error('The five boxing wizards jump quickly.')
 
+import time
 while True:
     socketHandler.try_receive()
     sleep( 1.0 / 60)
+    logger1.info("你好"* 50)
+    print time.time()
