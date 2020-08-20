@@ -6,10 +6,8 @@ import OpenGL.GL as gl
 import imgui
 from imgui.integrations.glfw import GlfwRenderer
 
-from src.controller import log_server_old
 from src.controller.log_server import LogServer, PowerLogHandler
 from src.view.mainview import MainView
-
 
 class App(object):
     _instance = None
@@ -43,7 +41,9 @@ class App(object):
     def start(self):
         imgui.create_context()
         io = imgui.get_io()
-        io.fonts.add_font_from_file_ttf("./res/font/FZZYJW.ttf", 12, io.fonts.get_glyph_ranges_chinese_full())
+        # io.fonts.add_font_default()
+        io.fonts.add_font_from_file_ttf("./res/font/Roboto-Medium.ttf", 14, io.fonts.get_glyph_ranges_chinese_full())
+        io.fonts.add_font_from_file_ttf("./res/font/FZY3JW.ttf", 13, io.fonts.get_glyph_ranges_chinese_full(), True)
         self.window = App._impl_glfw_init()
         impl = GlfwRenderer(self.window)
 

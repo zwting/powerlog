@@ -14,11 +14,11 @@ class MainView(object):
         self.app = app
         self.width = width
         self.height = height
-        self.last_sel_log = None
         self.config = MainConfig.main_config()
         self.log_level = ["Log", "Warning", "Error"]
         self.ID_CHILD_CONSOLE = "child_console"
         self.log_level_lst = [logging.INFO, logging.WARNING, logging.ERROR]
+        self.sel_idx = None
 
         self.init()
 
@@ -88,7 +88,7 @@ class MainView(object):
 
         search_text = self.config.get_string(EConfigKey.CONTENT_SEARCH_TEXT)
         win_width = imgui.get_window_width()
-        for record in self.log_mgr.log_lst:
+        for idx, record in enumerate(self.log_mgr.log_lst):
             if not self.config.is_has_log_level(record.level):
                 continue
             if not utils.filter_search_text(search_text, record):
@@ -100,10 +100,14 @@ class MainView(object):
                 old_color = utils.set_style_color(imgui.COLOR_TEXT, TextColor.EYellow)
             elif record.level == logging.INFO:
                 old_color = utils.set_style_color(imgui.COLOR_TEXT, TextColor.EWhite)
-            imgui.push_id(record.create_time_in_str)
-            ret = imgui.selectable_wrap(record.msg_with_level, record == self.last_sel_log, 0, win_width*0.98, 30)
+            imgui.push_id(str(idx))
+            ret = imgui.selectable_wrap(record.msg_with_level,  idx == self.sel_idx, imgui.SELECTABLE_ALLOW_DOUBLE_CLICK,
+                                        win_width*0.98, 30)
             if ret[1]:
-                self.last_sel_log = record
+                self.sel_idx = idx
+            if imgui.is_mouse_double_clicked(0):
+                self.draw_log_detail_info_panel(idx, record)
+                print "double click"
             if old_color:
                 utils.set_style_color(imgui.COLOR_TEXT, old_color)
             imgui.pop_id()
@@ -120,6 +124,10 @@ class MainView(object):
 
         imgui.end_child()
         imgui.pop_style_var()
+
+    # 绘制某条log的详细信息
+    def draw_log_detail_info_panel(self, idx, log):
+        pass
 
     def draw_btn_bar(self):
          # 按钮栏
