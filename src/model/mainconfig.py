@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 from src.common import utils
+import os
+
+config_file_path = os.path.join(os.getcwd(), "config", "config.json")
 
 class EConfigKey(object):
     LOG_LEVEL_LIST = "LOG_LEVEL_LIST"           # log等级勾选状态
@@ -8,6 +11,7 @@ class EConfigKey(object):
     CONTENT_CMD_IDX = "CONTENT_CMD_IDX"         # 命令框历史记录指针
     CONTENT_CMD_MAX_COUNT = "CONTENT_CMD_MAX_COUNT" # 命令框历史记录最大值
     CONTENT_SCROLL_TO_BOTTOM = "CONTENT_SCROLL_TO_BOTTOM"   #log是否固定到底部
+
 
 class MainConfig(object):
     _instance = None
@@ -20,6 +24,7 @@ class MainConfig(object):
 
     def __init__(self):
         self.config = {}
+        self.load()
 
     # 历史记录最大值
     @property
@@ -93,10 +98,25 @@ class MainConfig(object):
         self.config[key] = value
 
     def save(self):
-        pass
+        global config_file_path
+        import json
+        with open(config_file_path, "w") as f:
+            json_str = json.dumps(self.config)
+            f.write(json_str)
+            f.flush()
 
     def load(self):
-        pass
-
+        global config_file_path
+        import json
+        if not os.path.exists(config_file_path):
+            self.config = {}
+            return
+        with open(config_file_path, "r") as f:
+            try:
+                json_str = f.read()
+                self.config = json.loads(json_str)
+            except Exception as err:
+                self.config = {}
+                print err
 
 

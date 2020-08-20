@@ -62,6 +62,7 @@ class App(object):
             impl.render(imgui.get_draw_data())
             glfw.swap_buffers(self.window)
 
+        self.main_view and self.main_view.on_close()
         impl.shutdown()
         glfw.terminate()
 

@@ -19,6 +19,8 @@ class MainView(object):
         self.ID_CHILD_CONSOLE = "child_console"
         self.log_level_lst = [logging.INFO, logging.WARNING, logging.ERROR]
         self.sel_idx = None
+        self.detail_idx = None
+        self.is_open_detail = False
 
         self.init()
 
@@ -105,9 +107,10 @@ class MainView(object):
                                         win_width*0.98, 30)
             if ret[1]:
                 self.sel_idx = idx
-            if imgui.is_mouse_double_clicked(0):
-                self.draw_log_detail_info_panel(idx, record)
-                print "double click"
+            if imgui.is_item_hovered() and imgui.is_mouse_double_clicked(0):
+                self.detail_idx = idx
+                imgui.open_popup("detail_log_%d" % self.detail_idx)
+            self.draw_log_detail_info_panel(idx, record)
             if old_color:
                 utils.set_style_color(imgui.COLOR_TEXT, old_color)
             imgui.pop_id()
@@ -127,7 +130,24 @@ class MainView(object):
 
     # 绘制某条log的详细信息
     def draw_log_detail_info_panel(self, idx, log):
-        pass
+        if idx != self.detail_idx:
+            return
+        popup_id = "detail_log_%s" % self.detail_idx
+
+        win_size = imgui.get_window_size()
+        item_size = (win_size.x * 0.94, win_size.y * 0.5)
+        imgui.set_next_window_size(item_size[0], item_size[1])
+        imgui.set_next_window_position((win_size.x - item_size[0]) * 0.5, (win_size.y - item_size[1]) * 0.5)
+        if imgui.begin_popup(popup_id):
+            msg = log.detail_info
+            utils.get_win_size()
+            btn_height = 22
+            padding = imgui.get_style().window_padding
+            area_size = (item_size[0] * 0.98, item_size[1] * 0.94 - btn_height - padding.y * 0.6)
+            imgui.input_text_multiline("##hidden", msg, len(msg) + 1, area_size[0], area_size[1], imgui.INPUT_TEXT_READ_ONLY)
+            if imgui.button("复制", area_size[0], btn_height):
+                print ("复制")
+            imgui.end_popup()
 
     def draw_btn_bar(self):
          # 按钮栏
@@ -223,5 +243,7 @@ class MainView(object):
         print("on_search_text_change>>", new_text)
 
     def refresh(self, new_record):
-
         pass
+
+    def on_close(self):
+        self.config.save()

@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
+import logging
 from collections import deque
 
 class LoggerWrap(object):
     def __init__(self, log_record):
         self.log_record = log_record
+        self.detail_formatter = None
 
     @property
     def msg_with_level(self):
@@ -12,6 +14,13 @@ class LoggerWrap(object):
     @property
     def file_info(self):
         return "(%s:%d)" % (self.log_record.pathname, self.log_record.lineno)
+
+    @property
+    def detail_info(self):
+        if not self.detail_formatter:
+            self.detail_formatter = \
+                logging.Formatter(fmt='[%(levelname)s][%(asctime)s] (%(pathname)s:%(lineno)d) in %(funcName)s()\n%(message)s')
+        return self.detail_formatter.format(self.log_record)
 
     @property
     def msg(self):
