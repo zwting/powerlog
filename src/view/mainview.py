@@ -21,6 +21,8 @@ class MainView(object):
         self.sel_idx = None
         self.detail_idx = None
         self.is_open_detail = False
+        self.is_edit_cmd = True
+        self.cur_edit_txt = ""
 
         self.init()
 
@@ -86,7 +88,7 @@ class MainView(object):
         padding = cur_style.window_padding
         cur_cursor_pos = imgui.get_cursor_pos()
         imgui.set_cursor_pos((cur_cursor_pos[0] + padding[0], cur_cursor_pos[1] + padding[1]))
-        imgui.begin_child(self.ID_CHILD_CONSOLE, self.width - cur_style.window_padding[0] * 2, self.height - 150, True)
+        imgui.begin_child(self.ID_CHILD_CONSOLE, self.width - cur_style.window_padding[0] * 2, self.height - 80, True)
 
         search_text = self.config.get_string(EConfigKey.CONTENT_SEARCH_TEXT)
         win_width = imgui.get_window_width()
@@ -194,18 +196,30 @@ class MainView(object):
     def draw_input_bar(self):
         utils.set_cursor_offset(6, 0)
         cur_cmd = self.config.get_current_cmd()
-        win_width = imgui.get_window_width()
-        win_height = imgui.get_window_height()
+        cur_txt = self.cur_edit_txt if self.is_edit_cmd else cur_cmd
+        # win_width = imgui.get_window_width()
+        # win_height = imgui.get_window_height()
+        imgui.push_item_width(520)
         imgui.push_id(EConfigKey.CONTENT_CMD_TXT)
-        ret = imgui.input_text("", cur_cmd, 1024, imgui.INPUT_TEXT_ENTER_RETURNS_TRUE|
+        ret = imgui.input_text("", cur_txt, 1024, imgui.INPUT_TEXT_ENTER_RETURNS_TRUE|
                                imgui.INPUT_TEXT_CALLBACK_COMPLETION | imgui.INPUT_TEXT_CALLBACK_HISTORY
                                ,self.input_bar_callback)
+        self.is_edit_cmd = ret[1] != cur_cmd
+        if self.is_edit_cmd:
+            self.cur_edit_txt = ret[1]
         if ret[0]:
-            self.excute_cmd(ret[1])
-            imgui.set_item_default_focus()
-            imgui.set_keyboard_focus_here(-1)
+            self._send_cmd(ret[1])
             # print "hello world", ret[1]
         imgui.pop_id()
+        imgui.same_line()
+        utils.set_cursor_offset(-8, 0)
+        if imgui.button("发送命令"):
+            self._send_cmd(ret[1])
+
+    def _send_cmd(self, cmd):
+        self.excute_cmd(cmd)
+        imgui.set_item_default_focus()
+        imgui.set_keyboard_focus_here(-1)
 
     def excute_cmd(self, cmd):
         if not cmd:

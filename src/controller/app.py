@@ -9,6 +9,8 @@ from imgui.integrations.glfw import GlfwRenderer
 from src.controller.log_server import LogServer, PowerLogHandler
 from src.view.mainview import MainView
 
+g_size = 1280, 720
+
 class App(object):
     _instance = None
 
@@ -24,8 +26,10 @@ class App(object):
         return App._instance
 
     def __init__(self, width, height):
+        global g_size
         self.width = width
         self.height = height
+        g_size = width, height
         self.window = None
         self.main_view = MainView(self, width, height)
         self.log_server = LogServer(PowerLogHandler())
@@ -51,7 +55,7 @@ class App(object):
             glfw.poll_events()
             impl.process_inputs()
             imgui.new_frame()
-            imgui.show_test_window()
+            # imgui.show_test_window()
 
             self.update()
 
@@ -69,7 +73,8 @@ class App(object):
 
     @staticmethod
     def _impl_glfw_init():
-        width, height = 1280, 720
+        global g_size
+        width, height = g_size
         window_name = "minimal ImGui/GLFW3 example"
 
         if not glfw.init():
@@ -82,6 +87,7 @@ class App(object):
         glfw.window_hint(glfw.OPENGL_PROFILE, glfw.OPENGL_CORE_PROFILE)
 
         glfw.window_hint(glfw.OPENGL_FORWARD_COMPAT, gl.GL_TRUE)
+        glfw.window_hint(glfw.RESIZABLE, glfw.FALSE)
 
         # Create a windowed mode window and its OpenGL context
         window = glfw.create_window(

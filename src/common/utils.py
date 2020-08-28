@@ -46,15 +46,14 @@ def is_menu_item_click(str_label, str_shortcut=None, bool_selected=False, enable
 def filter_search_text(search_text, record):
     if not search_text:
         return True
-    "".startswith("f:")
     len_text = len(search_text)
     if len_text > 2 and search_text.startswith("f:"):
         real_key = search_text[2:]
         print real_key
         if not real_key:
             return True
-        return real_key in record.filename[:-3]
+        return real_key.lower() in record.filename[:-3].lower()
     else:
         if len_text == 2:
             return True
-        return search_text in record.msg
+        return search_text.lower() in record.msg.lower()
